@@ -3,7 +3,7 @@
 use clap::Parser;
 use std::path::PathBuf;
 
-use crate::{compiler::CompilerError, parser::ParserError};
+use crate::{compiler::CompilerError};
 
 #[derive(Parser, Debug)]
 #[command(name = "mcslc")]
