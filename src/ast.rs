@@ -57,7 +57,7 @@ pub enum Statement {
 /// Condition for if blocks
 #[derive(Debug, Clone)]
 pub struct IfCondition {
-    pub target: Expr,      // What to check (@a, @block, etc.)
+    pub target: Expr,       // What to check (@a, @block, etc.)
     pub check_type: String, // What type of check (entity, block, score, etc.)
     pub operator: String,   // ==, !=, etc.
 }

@@ -29,7 +29,7 @@ impl CodeGenerator {
             namespace: namespace.to_string(),
         }
     }
-    
+
     /// Generate all code from a program
     pub fn generate(&mut self, program: &Program) -> Result<(), String> {
         for item in &program.items {
@@ -37,7 +37,7 @@ impl CodeGenerator {
         }
         Ok(())
     }
-    
+
     fn generate_item(&mut self, item: &TopLevelItem) -> Result<(), String> {
         match item {
             TopLevelItem::Function(func) => self.generate_function(func),
@@ -52,22 +52,22 @@ impl CodeGenerator {
             }
         }
     }
-    
+
     fn generate_function(&mut self, func: &FunctionDef) -> Result<(), String> {
         let mut lines = Vec::new();
-        
+
         for stmt in &func.body.statements {
             let cmd = self.generate_statement(stmt)?;
             if !cmd.is_empty() {
                 lines.push(cmd);
             }
         }
-        
+
         let content = lines.join("\n");
         let path = format!("{}.mcfunction", func.name);
-        
+
         self.functions.push(GeneratedFile { path, content });
-        
+
         // Register tag functions
         if let Some(tag) = &func.tag {
             match tag {
@@ -75,35 +75,31 @@ impl CodeGenerator {
                 FunctionTag::Tick => self.tick_functions.push(func.name.clone()),
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn generate_statement(&mut self, stmt: &Statement) -> Result<String, String> {
         match stmt {
-            Statement::Command(cmd_name, args) => {
-                self.generate_command(cmd_name, args)
-            }
+            Statement::Command(cmd_name, args) => self.generate_command(cmd_name, args),
             Statement::FunctionCall(func_name) => {
                 Ok(format!("function {}:{} ", self.namespace, func_name))
             }
-            Statement::IfBlock(condition, body) => {
-                self.generate_if_block(condition, body)
-            }
+            Statement::IfBlock(condition, body) => self.generate_if_block(condition, body),
         }
     }
-    
+
     fn generate_command(&self, cmd_name: &str, args: &[CommandArg]) -> Result<String, String> {
         let mc_cmd = self.command_name_to_vanilla(cmd_name);
         let args_str = self.format_command_args(cmd_name, args)?;
-        
+
         if args_str.is_empty() {
             Ok(mc_cmd)
         } else {
             Ok(format!("{} {}", mc_cmd, args_str))
         }
     }
-    
+
     fn command_name_to_vanilla(&self, name: &str) -> String {
         // Map MCSL command names to Minecraft commands
         // Support aliases for convenience
@@ -207,299 +203,157 @@ impl CodeGenerator {
         }
         .to_string()
     }
-    
+
     fn format_command_args(&self, cmd_name: &str, args: &[CommandArg]) -> Result<String, String> {
         match cmd_name.to_lowercase().as_str() {
             // === CORE COMMANDS ===
-            "function" | "fn" | "run" => {
-                self.format_function_args(args)
-            }
-            "execute" | "exec" => {
-                self.format_execute_args(args)
-            }
-            "data" => {
-                self.format_data_args(args)
-            }
-            "item" => {
-                self.format_item_args(args)
-            }
-            "scoreboard" | "sb" | "cscoreboard" | "csb" => {
-                self.format_scoreboard_args(args)
-            }
-            "tag" => {
-                self.format_tag_args(args)
-            }
-            "team" => {
-                self.format_team_args(args)
-            }
-            "schedule" | "sched" => {
-                self.format_schedule_args(args)
-            }
-            "return" => {
-                self.format_return_args(args)
-            }
-            "random" | "rng" => {
-                self.format_random_args(args)
-            }
-            "tick" => {
-                self.format_tick_args(args)
-            }
-            "reload" => {
-                Ok("".to_string())
-            }
+            "function" | "fn" | "run" => self.format_function_args(args),
+            "execute" | "exec" => self.format_execute_args(args),
+            "data" => self.format_data_args(args),
+            "item" => self.format_item_args(args),
+            "scoreboard" | "sb" | "cscoreboard" | "csb" => self.format_scoreboard_args(args),
+            "tag" => self.format_tag_args(args),
+            "team" => self.format_team_args(args),
+            "schedule" | "sched" => self.format_schedule_args(args),
+            "return" => self.format_return_args(args),
+            "random" | "rng" => self.format_random_args(args),
+            "tick" => self.format_tick_args(args),
+            "reload" => Ok("".to_string()),
 
             // === TELEPORT ===
-            "tp" | "teleport" | "tele" => {
-                self.format_teleport_args(args)
-            }
+            "tp" | "teleport" | "tele" => self.format_teleport_args(args),
 
             // === SAY / TELLRAW ===
-            "say" => {
-                self.format_say_args(args)
-            }
-            "tellraw" | "message" | "msg" => {
-                self.format_tellraw_args(args)
-            }
-            "tell" | "w" | "whisper" => {
-                self.format_tell_args(args)
-            }
-            "me" => {
-                self.format_simple_args(args, false)
-            }
+            "say" => self.format_say_args(args),
+            "tellraw" | "message" | "msg" => self.format_tellraw_args(args),
+            "tell" | "w" | "whisper" => self.format_tell_args(args),
+            "me" => self.format_simple_args(args, false),
 
             // === GIVE / CLEAR / ITEMS ===
-            "give" | "g" => {
-                self.format_give_args(args)
-            }
-            "clear" | "clr" => {
-                self.format_clear_args(args)
-            }
-            "loot" => {
-                self.format_loot_args(args)
-            }
-            "use" => {
-                self.format_use_args(args)
-            }
+            "give" | "g" => self.format_give_args(args),
+            "clear" | "clr" => self.format_clear_args(args),
+            "loot" => self.format_loot_args(args),
+            "use" => self.format_use_args(args),
 
             // === EFFECT ===
-            "effect" | "eff" | "potion" => {
-                self.format_effect_args(args)
-            }
+            "effect" | "eff" | "potion" => self.format_effect_args(args),
 
             // === SUMMON ===
-            "summon" | "spawn" => {
-                self.format_summon_args(args)
-            }
+            "summon" | "spawn" => self.format_summon_args(args),
 
             // === SETBLOCK / FILL / CLONE ===
-            "setblock" | "setb" => {
-                self.format_setblock_args(args)
-            }
-            "fill" => {
-                self.format_fill_args(args)
-            }
-            "clone" => {
-                self.format_clone_args(args)
-            }
+            "setblock" | "setb" => self.format_setblock_args(args),
+            "fill" => self.format_fill_args(args),
+            "clone" => self.format_clone_args(args),
 
             // === PARTICLE ===
-            "particle" | "part" | "particles" => {
-                self.format_particle_args(args)
-            }
+            "particle" | "part" | "particles" => self.format_particle_args(args),
 
             // === TITLE ===
-            "title" => {
-                self.format_title_args(args)
-            }
+            "title" => self.format_title_args(args),
 
             // === DAMAGE ===
-            "damage" | "dmg" => {
-                self.format_damage_args(args)
-            }
+            "damage" | "dmg" => self.format_damage_args(args),
 
             // === ENCHANT ===
-            "enchant" | "ench" => {
-                self.format_enchant_args(args)
-            }
+            "enchant" | "ench" => self.format_enchant_args(args),
 
             // === XP / EXPERIENCE ===
-            "xp" | "experience" | "exp" => {
-                self.format_xp_args(args)
-            }
+            "xp" | "experience" | "exp" => self.format_xp_args(args),
 
             // === GAMEMODE ===
-            "gamemode" | "gm" => {
-                self.format_gamemode_args(args)
-            }
+            "gamemode" | "gm" => self.format_gamemode_args(args),
 
             // === ATTRIBUTE ===
-            "attribute" | "attr" => {
-                self.format_attribute_args(args)
-            }
+            "attribute" | "attr" => self.format_attribute_args(args),
 
             // === BOSSBAR ===
-            "bossbar" | "boss" => {
-                self.format_bossbar_args(args)
-            }
+            "bossbar" | "boss" => self.format_bossbar_args(args),
 
             // === PLAYSOUND / STOPSOUND ===
-            "playsound" | "sound" | "play" => {
-                self.format_playsound_args(args)
-            }
-            "stopsound" | "stops" => {
-                self.format_stopsound_args(args)
-            }
+            "playsound" | "sound" | "play" => self.format_playsound_args(args),
+            "stopsound" | "stops" => self.format_stopsound_args(args),
 
             // === LOCATE ===
-            "locate" | "loc" => {
-                self.format_locate_args(args)
-            }
+            "locate" | "loc" => self.format_locate_args(args),
 
             // === ADVANCEMENT ===
-            "advancement" | "adv" | "achievement" => {
-                self.format_advancement_args(args)
-            }
+            "advancement" | "adv" | "achievement" => self.format_advancement_args(args),
 
             // === RECIPE ===
-            "recipe" | "rec" => {
-                self.format_recipe_args(args)
-            }
+            "recipe" | "rec" => self.format_recipe_args(args),
 
             // === WORLD BORDER ===
-            "worldborder" | "border" => {
-                self.format_worldborder_args(args)
-            }
+            "worldborder" | "border" => self.format_worldborder_args(args),
 
             // === FILL BIOME ===
-            "fillbiome" | "biome" => {
-                self.format_fillbiome_args(args)
-            }
+            "fillbiome" | "biome" => self.format_fillbiome_args(args),
 
             // === PLACE ===
-            "place" => {
-                self.format_place_args(args)
-            }
+            "place" => self.format_place_args(args),
 
             // === FORCELOAD ===
-            "forceload" | "load" => {
-                self.format_forceload_args(args)
-            }
+            "forceload" | "load" => self.format_forceload_args(args),
 
             // === DIFFICULTY ===
-            "difficulty" | "diff" => {
-                self.format_difficulty_args(args)
-            }
+            "difficulty" | "diff" => self.format_difficulty_args(args),
 
             // === GAMERULE ===
-            "gamerule" | "rule" | "gr" => {
-                self.format_gamerule_args(args)
-            }
+            "gamerule" | "rule" | "gr" => self.format_gamerule_args(args),
 
             // === TIME ===
-            "time" => {
-                self.format_time_args(args)
-            }
+            "time" => self.format_time_args(args),
 
             // === WEATHER ===
-            "weather" | "wx" => {
-                self.format_weather_args(args)
-            }
+            "weather" | "wx" => self.format_weather_args(args),
 
             // === SPAWNPOINT ===
-            "spawnpoint" => {
-                self.format_spawnpoint_args(args)
-            }
+            "spawnpoint" => self.format_spawnpoint_args(args),
 
             // === SETWORLDSPAWN ===
-            "setworldspawn" | "worldspawn" => {
-                self.format_setworldspawn_args(args)
-            }
+            "setworldspawn" | "worldspawn" => self.format_setworldspawn_args(args),
 
             // === KICK ===
-            "kick" => {
-                self.format_kick_args(args)
-            }
+            "kick" => self.format_kick_args(args),
 
             // === WHITELIST ===
-            "whitelist" => {
-                self.format_whitelist_args(args)
-            }
+            "whitelist" => self.format_whitelist_args(args),
 
             // === BAN / PARDON ===
-            "ban" => {
-                self.format_ban_args(args)
-            }
-            "pardon" => {
-                self.format_pardon_args(args)
-            }
+            "ban" => self.format_ban_args(args),
+            "pardon" => self.format_pardon_args(args),
 
             // === OP / DEOP ===
-            "op" => {
-                self.format_op_args(args)
-            }
-            "deop" => {
-                self.format_deop_args(args)
-            }
+            "op" => self.format_op_args(args),
+            "deop" => self.format_deop_args(args),
 
             // === DEBUG & PROFILING ===
-            "debug" => {
-                self.format_debug_args(args)
-            }
-            "publish" => {
-                self.format_publish_args(args)
-            }
-            "spectate" => {
-                self.format_spectate_args(args)
-            }
-            "perf" => {
-                Ok("".to_string())
-            }
-            "jfr" => {
-                Ok("".to_string())
-            }
+            "debug" => self.format_debug_args(args),
+            "publish" => self.format_publish_args(args),
+            "spectate" => self.format_spectate_args(args),
+            "perf" => Ok("".to_string()),
+            "jfr" => Ok("".to_string()),
 
             // === STRUCTURE & WORLD GEN ===
-            "jigsaw" => {
-                self.format_jigsaw_args(args)
-            }
-            "chunk" => {
-                self.format_chunk_args(args)
-            }
+            "jigsaw" => self.format_jigsaw_args(args),
+            "chunk" => self.format_chunk_args(args),
 
             // === UTILITY ===
-            "help" | "h" => {
-                self.format_help_args(args)
-            }
-            "datapack" | "pack" => {
-                self.format_datapack_args(args)
-            }
-            "seed" => {
-                Ok("".to_string())
-            }
-            "list" => {
-                Ok("".to_string())
-            }
-            "save" => {
-                self.format_save_args(args)
-            }
-            "stop" => {
-                Ok("".to_string())
-            }
+            "help" | "h" => self.format_help_args(args),
+            "datapack" | "pack" => self.format_datapack_args(args),
+            "seed" => Ok("".to_string()),
+            "list" => Ok("".to_string()),
+            "save" => self.format_save_args(args),
+            "stop" => Ok("".to_string()),
 
             // === RIDE / MOUNT ===
-            "ride" | "mount" => {
-                self.format_ride_args(args)
-            }
+            "ride" | "mount" => self.format_ride_args(args),
 
             // === ROTATE ===
-            "rotate" | "rot" => {
-                self.format_rotate_args(args)
-            }
+            "rotate" | "rot" => self.format_rotate_args(args),
 
             // === INPUT PERMISSION ===
-            "inputpermission" | "inputperm" => {
-                self.format_inputpermission_args(args)
-            }
+            "inputpermission" | "inputperm" => self.format_inputpermission_args(args),
 
             // === DEFAULT: Simple space-separated args ===
             _ => self.format_simple_args(args, false),
@@ -512,29 +366,27 @@ impl CodeGenerator {
         let mut target = "@s".to_string();
         let mut coords = "~ ~ ~".to_string();
         let mut rotation = None;
-        
+
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "entity" | "target" => {
-                            target = self.format_expr(value)?;
-                        }
-                        "coords" | "pos" | "position" | "to" => {
-                            if let Expr::Coords(c) = value {
-                                coords = self.format_coords(c);
-                            } else if let Expr::Array(arr) = value {
-                                coords = self.format_array_as_coords(arr)?;
-                            }
-                        }
-                        "rotation" | "rot" => {
-                            if let Expr::Array(arr) = value {
-                                rotation = Some(self.format_array_as_coords(arr)?);
-                            }
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "entity" | "target" => {
+                        target = self.format_expr(value)?;
                     }
-                }
+                    "coords" | "pos" | "position" | "to" => {
+                        if let Expr::Coords(c) = value {
+                            coords = self.format_coords(c);
+                        } else if let Expr::Array(arr) = value {
+                            coords = self.format_array_as_coords(arr)?;
+                        }
+                    }
+                    "rotation" | "rot" => {
+                        if let Expr::Array(arr) = value {
+                            rotation = Some(self.format_array_as_coords(arr)?);
+                        }
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     // Positional args: first is target, rest are coords
                     let formatted = self.format_expr(expr)?;
@@ -550,21 +402,21 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         if let Some(rot) = rotation {
             Ok(format!("{} {} {}", target, coords, rot))
         } else {
             Ok(format!("{} {}", target, coords))
         }
     }
-    
+
     fn format_tellraw_args(&self, args: &[CommandArg]) -> Result<String, String> {
         if args.is_empty() {
             return Ok("".to_string());
         }
-        
+
         let mut result = Vec::new();
-        
+
         for (i, arg) in args.iter().enumerate() {
             if i == 0 {
                 // First arg is always target
@@ -576,11 +428,13 @@ impl CodeGenerator {
             } else {
                 // Second arg is message (array or JSON string)
                 match arg {
-                    CommandArg::Positional(Expr::Array(items)) | CommandArg::Named(_, Expr::Array(items)) => {
+                    CommandArg::Positional(Expr::Array(items))
+                    | CommandArg::Named(_, Expr::Array(items)) => {
                         // Format as JSON: ["text", "color", bold, italic]
                         result.push(self.format_tellraw_message(items)?);
                     }
-                    CommandArg::Positional(Expr::String(s)) | CommandArg::Named(_, Expr::String(s)) => {
+                    CommandArg::Positional(Expr::String(s))
+                    | CommandArg::Named(_, Expr::String(s)) => {
                         // Raw JSON string
                         result.push(s.clone());
                     }
@@ -590,40 +444,40 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         Ok(result.join(" "))
     }
-    
+
     fn format_tellraw_message(&self, items: &[Expr]) -> Result<String, String> {
         if items.is_empty() {
             return Ok("\"\"".to_string());
         }
-        
+
         // Simple format: ["text", "color", bold, italic]
         let text = if let Some(Expr::String(s)) = items.get(0) {
             s.clone()
         } else {
             "".to_string()
         };
-        
+
         let color = if let Some(Expr::String(s)) = items.get(1) {
             s.clone()
         } else {
             "white".to_string()
         };
-        
+
         let bold = if let Some(Expr::Bool(b)) = items.get(3) {
             *b
         } else {
             false
         };
-        
+
         let italic = if let Some(Expr::Bool(b)) = items.get(2) {
             *b
         } else {
             false
         };
-        
+
         // Build JSON
         let mut json = format!("{{\"text\":\"{}\",\"color\":\"{}\"", text, color);
         if bold {
@@ -633,31 +487,29 @@ impl CodeGenerator {
             json.push_str(",\"italic\":true");
         }
         json.push('}');
-        
+
         Ok(json)
     }
-    
+
     fn format_give_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut target = "@p".to_string();
         let mut item = "stone".to_string();
         let mut count = "1".to_string();
-        
+
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "target" | "to" | "player" => {
-                            target = self.format_expr(value)?;
-                        }
-                        "item" | "what" => {
-                            item = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "count" | "amount" | "qty" => {
-                            count = self.format_expr(value)?;
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "target" | "to" | "player" => {
+                        target = self.format_expr(value)?;
                     }
-                }
+                    "item" | "what" => {
+                        item = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    "count" | "amount" | "qty" => {
+                        count = self.format_expr(value)?;
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?;
                     if target == "@p" {
@@ -670,65 +522,63 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         if count == "1" {
             Ok(format!("{} {}", target, item))
         } else {
             Ok(format!("{} {} {}", target, item, count))
         }
     }
-    
+
     fn format_effect_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut parts = Vec::new();
         let mut has_subcommand = false;
-        
+
         for arg in args {
             let formatted = match arg {
                 CommandArg::Named(_, expr) => self.format_expr(expr)?,
                 CommandArg::Positional(expr) => self.format_expr(expr)?,
             };
-            
+
             // Check for subcommands
             if formatted == "give" || formatted == "clear" {
                 has_subcommand = true;
             }
-            
+
             parts.push(formatted);
         }
-        
+
         // Auto-add "give" if no subcommand and has args
         if !has_subcommand && !parts.is_empty() {
             parts.insert(0, "give".to_string());
         }
-        
+
         Ok(parts.join(" "))
     }
-    
+
     fn format_summon_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut entity = "pig".to_string();
         let mut pos = "~ ~ ~".to_string();
         let mut nbt = None;
-        
+
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "entity" | "what" | "type" => {
-                            entity = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "pos" | "coords" | "position" | "at" => {
-                            if let Expr::Coords(c) = value {
-                                pos = self.format_coords(c);
-                            } else if let Expr::Array(arr) = value {
-                                pos = self.format_array_as_coords(arr)?;
-                            }
-                        }
-                        "nbt" | "data" => {
-                            nbt = Some(self.format_expr(value)?);
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "entity" | "what" | "type" => {
+                        entity = self.format_expr(value)?.trim_matches('"').to_string();
                     }
-                }
+                    "pos" | "coords" | "position" | "at" => {
+                        if let Expr::Coords(c) = value {
+                            pos = self.format_coords(c);
+                        } else if let Expr::Array(arr) = value {
+                            pos = self.format_array_as_coords(arr)?;
+                        }
+                    }
+                    "nbt" | "data" => {
+                        nbt = Some(self.format_expr(value)?);
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?;
                     if entity == "pig" {
@@ -741,39 +591,37 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         if let Some(nbt_data) = nbt {
             Ok(format!("{} {} {}", entity, pos, nbt_data))
         } else {
             Ok(format!("{} {}", entity, pos))
         }
     }
-    
+
     fn format_setblock_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut pos = "~ ~ ~".to_string();
         let mut block = "stone".to_string();
         let mut mode = "replace".to_string();
-        
+
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "pos" | "coords" | "position" | "at" => {
-                            if let Expr::Coords(c) = value {
-                                pos = self.format_coords(c);
-                            } else if let Expr::Array(arr) = value {
-                                pos = self.format_array_as_coords(arr)?;
-                            }
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "pos" | "coords" | "position" | "at" => {
+                        if let Expr::Coords(c) = value {
+                            pos = self.format_coords(c);
+                        } else if let Expr::Array(arr) = value {
+                            pos = self.format_array_as_coords(arr)?;
                         }
-                        "block" | "what" | "to" => {
-                            block = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "mode" | "method" => {
-                            mode = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        _ => {}
                     }
-                }
+                    "block" | "what" | "to" => {
+                        block = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    "mode" | "method" => {
+                        mode = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?;
                     if pos == "~ ~ ~" {
@@ -786,43 +634,41 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         if mode != "replace" {
             Ok(format!("{} {} {}", pos, block, mode))
         } else {
             Ok(format!("{} {}", pos, block))
         }
     }
-    
+
     fn format_fill_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut from = "~ ~ ~".to_string();
         let mut to = "~5 ~5 ~5".to_string();
         let mut block = "stone".to_string();
         let mut mode = "replace".to_string();
-        
+
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "from" | "start" => {
-                            if let Expr::Array(arr) = value {
-                                from = self.format_array_as_coords(arr)?;
-                            }
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "from" | "start" => {
+                        if let Expr::Array(arr) = value {
+                            from = self.format_array_as_coords(arr)?;
                         }
-                        "to" | "end" => {
-                            if let Expr::Array(arr) = value {
-                                to = self.format_array_as_coords(arr)?;
-                            }
-                        }
-                        "block" | "what" | "with" => {
-                            block = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "mode" | "method" => {
-                            mode = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        _ => {}
                     }
-                }
+                    "to" | "end" => {
+                        if let Expr::Array(arr) = value {
+                            to = self.format_array_as_coords(arr)?;
+                        }
+                    }
+                    "block" | "what" | "with" => {
+                        block = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    "mode" | "method" => {
+                        mode = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?;
                     if from == "~ ~ ~" {
@@ -837,47 +683,45 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         if mode != "replace" {
             Ok(format!("{} {} {} {}", from, to, block, mode))
         } else {
             Ok(format!("{} {} {}", from, to, block))
         }
     }
-    
+
     fn format_clone_args(&self, args: &[CommandArg]) -> Result<String, String> {
         self.format_simple_args(args, false)
     }
-    
+
     fn format_particle_args(&self, args: &[CommandArg]) -> Result<String, String> {
         self.format_simple_args(args, false)
     }
-    
+
     fn format_title_args(&self, args: &[CommandArg]) -> Result<String, String> {
         self.format_simple_args(args, false)
     }
-    
+
     fn format_damage_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut targets = "@s".to_string();
         let mut amount = "1.0".to_string();
         let mut damage_type = None;
-        
+
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "targets" | "to" | "entity" => {
-                            targets = self.format_expr(value)?;
-                        }
-                        "amount" | "dmg" | "damage" => {
-                            amount = self.format_expr(value)?;
-                        }
-                        "type" | "damage_type" => {
-                            damage_type = Some(self.format_expr(value)?.trim_matches('"').to_string());
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "targets" | "to" | "entity" => {
+                        targets = self.format_expr(value)?;
                     }
-                }
+                    "amount" | "dmg" | "damage" => {
+                        amount = self.format_expr(value)?;
+                    }
+                    "type" | "damage_type" => {
+                        damage_type = Some(self.format_expr(value)?.trim_matches('"').to_string());
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?;
                     if targets == "@s" {
@@ -890,35 +734,33 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         if let Some(dt) = damage_type {
             Ok(format!("{} {} {}", targets, amount, dt))
         } else {
             Ok(format!("{} {}", targets, amount))
         }
     }
-    
+
     fn format_xp_args(&self, args: &[CommandArg]) -> Result<String, String> {
         self.format_simple_args(args, false)
     }
-    
+
     fn format_gamemode_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut mode = "survival".to_string();
         let mut target = None;
-        
+
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "mode" | "gm" | "to" => {
-                            mode = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "target" | "player" | "for" => {
-                            target = Some(self.format_expr(value)?);
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "mode" | "gm" | "to" => {
+                        mode = self.format_expr(value)?.trim_matches('"').to_string();
                     }
-                }
+                    "target" | "player" | "for" => {
+                        target = Some(self.format_expr(value)?);
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?.trim_matches('"').to_string();
                     if mode == "survival" {
@@ -929,7 +771,7 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         if let Some(t) = target {
             Ok(format!("{} {}", mode, t))
         } else {
@@ -945,24 +787,22 @@ impl CodeGenerator {
 
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "target" | "to" | "for" => {
-                            target = self.format_expr(value)?;
-                        }
-                        "pos" | "position" | "at" => {
-                            if let Expr::Coords(c) = value {
-                                pos = self.format_coords(c);
-                            } else if let Expr::Array(arr) = value {
-                                pos = self.format_array_as_coords(arr)?;
-                            }
-                        }
-                        "angle" | "rot" | "rotation" => {
-                            angle = Some(self.format_expr(value)?);
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "target" | "to" | "for" => {
+                        target = self.format_expr(value)?;
                     }
-                }
+                    "pos" | "position" | "at" => {
+                        if let Expr::Coords(c) = value {
+                            pos = self.format_coords(c);
+                        } else if let Expr::Array(arr) = value {
+                            pos = self.format_array_as_coords(arr)?;
+                        }
+                    }
+                    "angle" | "rot" | "rotation" => {
+                        angle = Some(self.format_expr(value)?);
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?;
                     if target == "@a" {
@@ -990,9 +830,13 @@ impl CodeGenerator {
         self.format_simple_args(args, false)
     }
 
-    fn format_simple_args(&self, args: &[CommandArg], strip_quotes: bool) -> Result<String, String> {
+    fn format_simple_args(
+        &self,
+        args: &[CommandArg],
+        strip_quotes: bool,
+    ) -> Result<String, String> {
         let mut result = Vec::new();
-        
+
         for arg in args {
             let formatted = match arg {
                 CommandArg::Named(name, value) => {
@@ -1009,10 +853,10 @@ impl CodeGenerator {
             };
             result.push(formatted);
         }
-        
+
         Ok(result.join(" "))
     }
-    
+
     fn format_array_as_coords(&self, arr: &[Expr]) -> Result<String, String> {
         let mut coords = Vec::new();
         for expr in arr {
@@ -1031,10 +875,10 @@ impl CodeGenerator {
         }
         Ok(coords.join(" "))
     }
-    
+
     fn format_args(&self, args: &[CommandArg]) -> Result<String, String> {
         let mut result = Vec::new();
-        
+
         for arg in args {
             match arg {
                 CommandArg::Named(name, value) => {
@@ -1046,13 +890,16 @@ impl CodeGenerator {
                 }
             }
         }
-        
+
         Ok(result.join(" "))
     }
-    
+
     fn format_expr(&self, expr: &Expr) -> Result<String, String> {
         match expr {
-            Expr::String(s) => Ok(format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))),
+            Expr::String(s) => Ok(format!(
+                "\"{}\"",
+                s.replace('\\', "\\\\").replace('"', "\\\"")
+            )),
             Expr::Number(n) => Ok(n.to_string()),
             Expr::Bool(b) => Ok(b.to_string()),
             Expr::Array(items) => {
@@ -1064,14 +911,14 @@ impl CodeGenerator {
             Expr::SelectorArgs(_) => Ok("".to_string()),
         }
     }
-    
+
     fn format_coords(&self, coords: &Coords) -> String {
         let x = self.format_coord_value(&coords.x);
         let y = self.format_coord_value(&coords.y);
         let z = self.format_coord_value(&coords.z);
         format!("{} {} {}", x, y, z)
     }
-    
+
     fn format_coord_value(&self, value: &CoordValue) -> String {
         match value {
             CoordValue::Absolute(n) => n.to_string(),
@@ -1081,22 +928,18 @@ impl CodeGenerator {
             CoordValue::Local(None) => "^".to_string(),
         }
     }
-    
+
     fn format_special_arg(&self, arg: &SpecialArg) -> String {
         match arg {
             SpecialArg::EntitySelector(sel) => sel.clone(),
-            SpecialArg::RelativeCoord(offset) => {
-                match offset {
-                    Some(o) => format!("~{}", o),
-                    None => "~".to_string(),
-                }
-            }
-            SpecialArg::LocalCoord(offset) => {
-                match offset {
-                    Some(o) => format!("^{}", o),
-                    None => "^".to_string(),
-                }
-            }
+            SpecialArg::RelativeCoord(offset) => match offset {
+                Some(o) => format!("~{}", o),
+                None => "~".to_string(),
+            },
+            SpecialArg::LocalCoord(offset) => match offset {
+                Some(o) => format!("^{}", o),
+                None => "^".to_string(),
+            },
         }
     }
 
@@ -1175,20 +1018,18 @@ impl CodeGenerator {
 
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "target" | "from" | "player" => {
-                            target = self.format_expr(value)?;
-                        }
-                        "item" | "what" => {
-                            item = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "count" | "max" | "max_count" => {
-                            max_count = self.format_expr(value)?;
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "target" | "from" | "player" => {
+                        target = self.format_expr(value)?;
                     }
-                }
+                    "item" | "what" => {
+                        item = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    "count" | "max" | "max_count" => {
+                        max_count = self.format_expr(value)?;
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?.trim_matches('"').to_string();
                     if target == "@a" {
@@ -1229,20 +1070,18 @@ impl CodeGenerator {
 
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "target" | "to" | "entity" => {
-                            targets = self.format_expr(value)?;
-                        }
-                        "enchantment" | "what" | "ench" => {
-                            enchantment = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "level" | "lvl" => {
-                            level = self.format_expr(value)?;
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "target" | "to" | "entity" => {
+                        targets = self.format_expr(value)?;
                     }
-                }
+                    "enchantment" | "what" | "ench" => {
+                        enchantment = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    "level" | "lvl" => {
+                        level = self.format_expr(value)?;
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?.trim_matches('"').to_string();
                     if targets == "@a" {
@@ -1285,36 +1124,34 @@ impl CodeGenerator {
 
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "sound" | "what" => {
-                            sound = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "source" | "category" => {
-                            source = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "target" | "to" | "player" => {
-                            targets = self.format_expr(value)?;
-                        }
-                        "pos" | "at" | "position" => {
-                            if let Expr::Coords(c) = value {
-                                pos = self.format_coords(c);
-                            } else if let Expr::Array(arr) = value {
-                                pos = self.format_array_as_coords(arr)?;
-                            }
-                        }
-                        "volume" | "vol" => {
-                            volume = self.format_expr(value)?;
-                        }
-                        "pitch" => {
-                            pitch = self.format_expr(value)?;
-                        }
-                        "min_volume" | "min" => {
-                            min_volume = self.format_expr(value)?;
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "sound" | "what" => {
+                        sound = self.format_expr(value)?.trim_matches('"').to_string();
                     }
-                }
+                    "source" | "category" => {
+                        source = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    "target" | "to" | "player" => {
+                        targets = self.format_expr(value)?;
+                    }
+                    "pos" | "at" | "position" => {
+                        if let Expr::Coords(c) = value {
+                            pos = self.format_coords(c);
+                        } else if let Expr::Array(arr) = value {
+                            pos = self.format_array_as_coords(arr)?;
+                        }
+                    }
+                    "volume" | "vol" => {
+                        volume = self.format_expr(value)?;
+                    }
+                    "pitch" => {
+                        pitch = self.format_expr(value)?;
+                    }
+                    "min_volume" | "min" => {
+                        min_volume = self.format_expr(value)?;
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?.trim_matches('"').to_string();
                     if sound == "entity.player.levelup" {
@@ -1337,11 +1174,20 @@ impl CodeGenerator {
         }
 
         if min_volume != "0" {
-            Ok(format!("{} {} {} {} {} {} {}", sound, source, targets, pos, volume, pitch, min_volume))
+            Ok(format!(
+                "{} {} {} {} {} {} {}",
+                sound, source, targets, pos, volume, pitch, min_volume
+            ))
         } else if pitch != "1" {
-            Ok(format!("{} {} {} {} {} {}", sound, source, targets, pos, volume, pitch))
+            Ok(format!(
+                "{} {} {} {} {} {}",
+                sound, source, targets, pos, volume, pitch
+            ))
         } else if volume != "1" {
-            Ok(format!("{} {} {} {} {}", sound, source, targets, pos, volume))
+            Ok(format!(
+                "{} {} {} {} {}",
+                sound, source, targets, pos, volume
+            ))
         } else if targets != "@a" {
             Ok(format!("{} {} {}", sound, source, targets))
         } else {
@@ -1357,20 +1203,18 @@ impl CodeGenerator {
 
         for arg in args {
             match arg {
-                CommandArg::Named(name, value) => {
-                    match name.as_str() {
-                        "target" | "to" | "player" => {
-                            targets = self.format_expr(value)?;
-                        }
-                        "source" | "category" => {
-                            source = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        "sound" | "what" => {
-                            sound = self.format_expr(value)?.trim_matches('"').to_string();
-                        }
-                        _ => {}
+                CommandArg::Named(name, value) => match name.as_str() {
+                    "target" | "to" | "player" => {
+                        targets = self.format_expr(value)?;
                     }
-                }
+                    "source" | "category" => {
+                        source = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    "sound" | "what" => {
+                        sound = self.format_expr(value)?.trim_matches('"').to_string();
+                    }
+                    _ => {}
+                },
                 CommandArg::Positional(expr) => {
                     let formatted = self.format_expr(expr)?.trim_matches('"').to_string();
                     if targets == "@a" {
@@ -1540,29 +1384,36 @@ impl CodeGenerator {
 
     // === END NEW ARGUMENT FORMATTERS ===
 
-    fn generate_if_block(&mut self, condition: &IfCondition, body: &Block) -> Result<String, String> {
+    fn generate_if_block(
+        &mut self,
+        condition: &IfCondition,
+        body: &Block,
+    ) -> Result<String, String> {
         self.if_counter += 1;
         let block_name = format!("ifBlocks/if_{}", self.if_counter);
-        
+
         // Generate the if block function
         let mut body_lines = Vec::new();
         for stmt in &body.statements {
             body_lines.push(self.generate_statement(stmt)?);
         }
-        
+
         let body_content = body_lines.join("\n");
         self.functions.push(GeneratedFile {
             path: format!("{}.mcfunction", block_name),
             content: body_content,
         });
-        
+
         // Generate the execute command
         let target = self.format_expr(&condition.target)?;
         let condition_str = self.format_condition(condition, &target)?;
-        
-        Ok(format!("execute {} run function {}:{}", condition_str, self.namespace, block_name))
+
+        Ok(format!(
+            "execute {} run function {}:{}",
+            condition_str, self.namespace, block_name
+        ))
     }
-    
+
     fn format_condition(&self, condition: &IfCondition, target: &str) -> Result<String, String> {
         match condition.check_type.as_str() {
             "entity" => Ok(format!("if entity {}", target)),
@@ -1571,7 +1422,7 @@ impl CodeGenerator {
             _ => Ok(format!("if entity {}", target)),
         }
     }
-    
+
     /// Generate tag JSON files
     pub fn generate_tags(&self) -> Vec<(String, String)> {
         let mut tags = Vec::new();
@@ -1607,42 +1458,42 @@ impl CodeGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_coord_formatting() {
         let gen = CodeGenerator::new("test");
-        
+
         let coords = Coords {
             x: CoordValue::Relative(None),
             y: CoordValue::Relative(Some(1.0)),
             z: CoordValue::Relative(None),
         };
-        
+
         assert_eq!(gen.format_coords(&coords), "~ ~1 ~");
     }
-    
+
     #[test]
     fn test_command_mapping() {
         let gen = CodeGenerator::new("test");
-        
+
         assert_eq!(gen.command_name_to_vanilla("tp"), "tp");
         assert_eq!(gen.command_name_to_vanilla("teleport"), "tp");
         assert_eq!(gen.command_name_to_vanilla("say"), "say");
         assert_eq!(gen.command_name_to_vanilla("gm"), "gamemode");
         assert_eq!(gen.command_name_to_vanilla("xp"), "xp");
     }
-    
+
     #[test]
     fn test_tellraw_formatting() {
         let gen = CodeGenerator::new("test");
-        
+
         let items = vec![
             Expr::String("Hello".to_string()),
             Expr::String("red".to_string()),
             Expr::Bool(false),
             Expr::Bool(true),
         ];
-        
+
         let result = gen.format_tellraw_message(&items).unwrap();
         assert!(result.contains("\"text\":\"Hello\""));
         assert!(result.contains("\"color\":\"red\""));
