@@ -126,21 +126,3 @@ impl Compiler {
         Ok(())
     }
 }
-
-/// Compile a file with default config
-pub fn compile_file(
-    input_path: &Path,
-    output_dir: &Path,
-    namespace: &str,
-) -> Result<(), CompilerError> {
-    let source = fs::read_to_string(input_path)?;
-
-    let config = CompilerConfig {
-        namespace: namespace.to_string(),
-        output_dir: output_dir.to_path_buf(),
-        description: format!("MCSL Datapack from {}", input_path.display()),
-    };
-
-    let compiler = Compiler::new(config);
-    compiler.compile(&source)
-}

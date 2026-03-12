@@ -10,7 +10,9 @@ mod lexer;
 mod parser;
 
 use clap::Parser;
-use compiler::compile_file;
+use std::fs;
+
+use crate::compiler::{Compiler, CompilerConfig};
 
 fn main() {
     let args = cli::Args::parse();
@@ -24,7 +26,22 @@ fn main() {
         std::process::exit(1);
     }
 
-    match compile_file(&args.input, &args.output, &args.namespace) {
+    let source = match fs::read_to_string(&args.input) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Error: Read file: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let config = CompilerConfig {
+        namespace: args.namespace.to_string(),
+        output_dir: args.output.to_path_buf(),
+        description: format!("MCSL Datapack from {}", args.input.display()),
+    };
+
+    let compiler = Compiler::new(config);
+    match compiler.compile(&source) {
         Ok(()) => cli::complete(&args),
         Err(e) => cli::print_error(e),
     }
