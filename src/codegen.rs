@@ -106,41 +106,27 @@ impl CodeGenerator {
         // Full Minecraft 1.21.1 command support
         match name.to_lowercase().as_str() {
             // === CORE COMMANDS ===
-            "function" | "fn" | "run" => "function",
-            "execute" | "exec" => "execute",
-            "data" => "data",
-            "item" => "item",
+            "fn" | "run" => "function",
+            "exec" => "execute",
             "scoreboard" | "sb" => "scoreboard",
-            "cscoreboard" | "csb" => "scoreboard",
-            "tag" => "tag",
-            "team" => "team",
-            "schedule" | "sched" => "schedule",
-            "return" => "return",
+            "schedule" | "sched" | "sc" => "schedule",
             "random" | "rng" => "random",
-            "tick" => "tick",
-            "reload" => "reload",
 
             // === ENTITY & MOBILITY ===
             "summon" | "spawn" => "summon",
             "damage" | "dmg" => "damage",
-            "kill" => "kill",
             "teleport" | "tp" | "tele" => "tp",
             "ride" | "mount" => "ride",
             "rotate" | "rot" => "rotate",
 
             // === BLOCKS & WORLD ===
             "setblock" | "setb" => "setblock",
-            "fill" => "fill",
-            "clone" => "clone",
             "fillbiome" | "biome" => "fillbiome",
-            "place" => "place",
             "forceload" | "load" => "forceload",
 
             // === ITEMS & INVENTORY ===
-            "give" | "g" => "give",
+            "g" => "give",
             "clear" | "clr" => "clear",
-            "loot" => "loot",
-            "use" => "use",
 
             // === PLAYER STATE ===
             "effect" | "eff" | "potion" => "effect",
@@ -153,52 +139,28 @@ impl CodeGenerator {
             "inputpermission" | "inputperm" => "inputpermission",
 
             // === DISPLAY & AUDIO ===
-            "title" => "title",
             "tellraw" | "message" | "msg" => "tellraw",
             "bossbar" | "boss" => "bossbar",
             "particle" | "part" | "particles" => "particle",
             "playsound" | "sound" | "play" => "playsound",
             "stopsound" | "stops" => "stopsound",
-            "jfr" => "jfr",
 
             // === WORLD & ENVIRONMENT ===
-            "time" => "time",
             "weather" | "wx" => "weather",
             "gamerule" | "rule" | "gr" => "gamerule",
             "difficulty" | "diff" => "difficulty",
-            "spawnpoint" => "spawnpoint",
+            "spawnpoint"  => "spawnpoint",
             "setworldspawn" | "worldspawn" => "setworldspawn",
 
             // === UTILITY ===
-            "say" => "say",
             "tell" | "w" | "whisper" => "tell",
-            "me" => "me",
             "help" | "h" => "help",
             "datapack" | "pack" => "datapack",
-            "seed" => "seed",
             "locate" | "loc" => "locate",
-            "kick" => "kick",
-            "list" => "list",
-            "perf" => "perf",
-            "save" => "save",
-            "stop" => "stop",
-            "whitelist" => "whitelist",
-            "ban" => "ban",
-            "pardon" => "pardon",
-            "op" => "op",
-            "deop" => "deop",
-
-            // === DEBUG & PROFILING ===
-            "debug" => "debug",
-            "publish" => "publish",
-            "spectate" => "spectate",
 
             // === STRUCTURE & WORLD GEN ===
-            "jigsaw" => "jigsaw",
-            "chunk" => "chunk",
             "worldborder" | "border" => "worldborder",
 
-            // === PASS THROUGH UNKNOWN ===
             _ => name,
         }
         .to_string()
