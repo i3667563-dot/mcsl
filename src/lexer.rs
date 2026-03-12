@@ -5,15 +5,15 @@ use thiserror::Error;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     // Keywords
-    Func,  // func (for defining functions)
-    If,    // if (for conditionals)
-    
+    Func, // func (for defining functions)
+    If,   // if (for conditionals)
+
     // Special prefixes
     At,      // @
     Percent, // %
     Hash,    // #
     Dollar,  // $
-    
+
     // Symbols
     LParen,   // (
     RParen,   // )
@@ -26,29 +26,29 @@ pub enum Token {
     Equals,   // =
 
     // Operators
-    EqEq,     // ==
-    NotEq,    // !=
-    Minus,    // -
-    DotDot,   // ..
-    Dot,      // .
-    Star,     // * (wildcard)
-    
+    EqEq,   // ==
+    NotEq,  // !=
+    Minus,  // -
+    DotDot, // ..
+    Dot,    // .
+    Star,   // * (wildcard)
+
     // Literals
     Identifier(String),
     String(String),
     Number(f64),
     Bool(bool),
-    
+
     // Coordinate symbols
-    Tilde,      // ~ (relative coordinate)
-    Caret,      // ^ (local coordinate)
-    
+    Tilde, // ~ (relative coordinate)
+    Caret, // ^ (local coordinate)
+
     // Special constructs
     EntitySelector(String), // @a, @p, @e, @s, @r
     RelativeCoord,          // @~
     LocalCoord,             // %^
     FunctionTag(String),    // $load, $tick
-    
+
     EOF,
 }
 
@@ -74,21 +74,21 @@ impl Lexer {
             pos: 0,
         }
     }
-    
+
     fn peek(&self) -> Option<char> {
         self.input.get(self.pos).copied()
     }
-    
+
     fn peek_next(&self) -> Option<char> {
         self.input.get(self.pos + 1).copied()
     }
-    
+
     fn advance(&mut self) -> Option<char> {
         let ch = self.peek();
         self.pos += 1;
         ch
     }
-    
+
     fn skip_whitespace(&mut self) {
         while let Some(ch) = self.peek() {
             if ch.is_whitespace() {
@@ -106,11 +106,11 @@ impl Lexer {
             }
         }
     }
-    
+
     fn read_string(&mut self) -> Result<String, LexerError> {
         let start_pos = self.pos;
         self.advance(); // Skip opening quote
-        
+
         let mut result = String::new();
         while let Some(ch) = self.peek() {
             if ch == '"' {
@@ -135,16 +135,16 @@ impl Lexer {
         }
         Err(LexerError::UnterminatedString(start_pos))
     }
-    
+
     fn read_number(&mut self) -> Result<f64, LexerError> {
         let start_pos = self.pos;
         let mut num_str = String::new();
-        
+
         // Handle negative numbers
         if self.peek() == Some('-') {
             num_str.push(self.advance().unwrap());
         }
-        
+
         // Read integer part
         while let Some(ch) = self.peek() {
             if ch.is_ascii_digit() {
@@ -154,7 +154,7 @@ impl Lexer {
                 break;
             }
         }
-        
+
         // Read decimal part
         if self.peek() == Some('.') {
             num_str.push(self.advance().unwrap());
@@ -167,12 +167,12 @@ impl Lexer {
                 }
             }
         }
-        
+
         num_str
             .parse::<f64>()
             .map_err(|_| LexerError::InvalidNumber(num_str, start_pos))
     }
-    
+
     fn read_identifier(&mut self) -> String {
         let mut result = String::new();
         while let Some(ch) = self.peek() {
@@ -185,7 +185,11 @@ impl Lexer {
                 // If : is at the end or followed by whitespace, it's a colon
                 let next_pos = self.pos + 1;
                 if let Some(next_ch) = self.input.get(next_pos) {
-                    if next_ch.is_alphanumeric() || *next_ch == '_' || *next_ch == '/' || *next_ch == '.' {
+                    if next_ch.is_alphanumeric()
+                        || *next_ch == '_'
+                        || *next_ch == '/'
+                        || *next_ch == '.'
+                    {
                         // This is a namespace separator, include it
                         result.push(ch);
                         self.advance();
@@ -202,17 +206,17 @@ impl Lexer {
         }
         result
     }
-    
+
     pub fn next_token(&mut self) -> Result<Token, LexerError> {
         self.skip_whitespace();
-        
+
         if self.pos >= self.input.len() {
             return Ok(Token::EOF);
         }
-        
+
         let ch = self.peek().unwrap();
         let start_pos = self.pos;
-        
+
         // Check for special prefixes first
         if ch == '@' {
             self.advance();
@@ -228,7 +232,7 @@ impl Lexer {
             }
             return Ok(Token::At);
         }
-        
+
         if ch == '%' {
             self.advance();
             if let Some(next) = self.peek() {
@@ -239,28 +243,52 @@ impl Lexer {
             }
             return Ok(Token::Percent);
         }
-        
+
         if ch == '#' {
             self.advance();
             return Ok(Token::Hash);
         }
-        
+
         if ch == '$' {
             self.advance();
             let tag = self.read_identifier();
             return Ok(Token::FunctionTag(tag));
         }
-        
+
         // Symbols
         match ch {
-            '(' => { self.advance(); return Ok(Token::LParen); }
-            ')' => { self.advance(); return Ok(Token::RParen); }
-            '{' => { self.advance(); return Ok(Token::LBrace); }
-            '}' => { self.advance(); return Ok(Token::RBrace); }
-            '[' => { self.advance(); return Ok(Token::LBracket); }
-            ']' => { self.advance(); return Ok(Token::RBracket); }
-            ':' => { self.advance(); return Ok(Token::Colon); }
-            ',' => { self.advance(); return Ok(Token::Comma); }
+            '(' => {
+                self.advance();
+                return Ok(Token::LParen);
+            }
+            ')' => {
+                self.advance();
+                return Ok(Token::RParen);
+            }
+            '{' => {
+                self.advance();
+                return Ok(Token::LBrace);
+            }
+            '}' => {
+                self.advance();
+                return Ok(Token::RBrace);
+            }
+            '[' => {
+                self.advance();
+                return Ok(Token::LBracket);
+            }
+            ']' => {
+                self.advance();
+                return Ok(Token::RBracket);
+            }
+            ':' => {
+                self.advance();
+                return Ok(Token::Colon);
+            }
+            ',' => {
+                self.advance();
+                return Ok(Token::Comma);
+            }
             '=' => {
                 self.advance();
                 if self.peek() == Some('=') {
@@ -305,7 +333,13 @@ impl Lexer {
                 let s = self.read_string()?;
                 return Ok(Token::String(s));
             }
-            _ if ch.is_ascii_digit() || (ch == '-' && self.peek_next().map(|c| c.is_ascii_digit()).unwrap_or(false)) => {
+            _ if ch.is_ascii_digit()
+                || (ch == '-'
+                    && self
+                        .peek_next()
+                        .map(|c| c.is_ascii_digit())
+                        .unwrap_or(false)) =>
+            {
                 let num = self.read_number()?;
                 return Ok(Token::Number(num));
             }
@@ -323,7 +357,7 @@ impl Lexer {
             _ => return Err(LexerError::UnexpectedChar(ch, start_pos)),
         }
     }
-    
+
     pub fn tokenize(&mut self) -> Result<Vec<Token>, LexerError> {
         let mut tokens = Vec::new();
         loop {
@@ -341,33 +375,33 @@ impl Lexer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_basic_tokens() {
         let input = r#"#say "Hello""#;
         let mut lexer = Lexer::new(input);
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::Hash);
         assert_eq!(tokens[1], Token::Identifier("say".to_string()));
         assert_eq!(tokens[2], Token::String("Hello".to_string()));
     }
-    
+
     #[test]
     fn test_entity_selector() {
         let input = "@a";
         let mut lexer = Lexer::new(input);
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::EntitySelector("@a".to_string()));
     }
-    
+
     #[test]
     fn test_relative_coord() {
         let input = "@~";
         let mut lexer = Lexer::new(input);
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::RelativeCoord);
     }
 }
