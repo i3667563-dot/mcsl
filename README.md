@@ -361,6 +361,8 @@ $tick func teleport_system {
 
 MIT
 
+P.S. для работы с компилятором рекомендуется [данное расширение](https://drive.google.com/file/d/1JWHyThnu1zBrtAA1ZFHDxVVpoHno2wKq/view?usp=sharing) на VS Code
+
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Rust](https://img.shields.io/badge/rust-1.75+-orange)
